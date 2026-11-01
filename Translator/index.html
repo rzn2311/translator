@@ -1,0 +1,719 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IoT Universal Translator</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+</head>
+
+<body>
+
+<header class="navbar">
+  <div class="brand">
+    <span class="brand-icon">◈</span>
+    UNIVERSAL<span>TRANSLATOR.</span>
+  </div>
+  <div class="nav-right">
+    <span class="nav-caption">ESP32 Smart Translation</span>
+    <span id="statusBadge" class="badge">Connecting...</span>
+  </div>
+</header>
+
+<main class="container">
+
+  <section class="hero">
+    <div class="hero-content">
+      <span class="eyebrow">✦ IOT UNIVERSAL TRANSLATOR</span>
+      <h1>Translate Without<br><span>Limits.</span></h1>
+      <p>Break language barriers with intelligent text and voice translation, powered by ESP32, MQTT, and Cloud API.</p>
+      <div class="hero-stats">
+        <div><strong>2</strong><small>Languages</small></div>
+        <div><strong>2</strong><small>Input Methods</small></div>
+        <div><strong>24/7</strong><small>Cloud Access</small></div>
+      </div>
+    </div>
+
+    <div class="hero-art">
+      <div class="art-orbit">
+        <div class="art-symbol">文 <span>↔</span> A</div>
+        <div class="art-label">SMART TRANSLATION</div>
+      </div>
+      <div class="floating-tag">✦ Connected Communication</div>
+    </div>
+  </section>
+
+  <div class="workspace">
+
+    <section class="card translator-card">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">TRANSLATION WORKSPACE</span>
+          <h2>Start Translating</h2>
+        </div>
+        <span class="section-icon">✦</span>
+      </div>
+
+      <div class="field">
+        <label>Language Direction</label>
+        <div class="language-box">
+          <span class="language-icon">🌐</span>
+          <span id="languageMode">Waiting for ESP32...</span>
+          <span class="device-tag">DEVICE CONTROLLED</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Choose Input Method</label>
+        <div class="method-grid">
+          <button id="methodText" class="method active" type="button">
+            <span class="method-icon">⌨</span>
+            <strong>Send Text</strong>
+            <small>Type your message</small>
+          </button>
+
+          <button id="methodMic" class="method" type="button">
+            <span class="method-icon">🎙</span>
+            <strong>Microphone</strong>
+            <small>Hold to speak</small>
+          </button>
+        </div>
+      </div>
+
+      <div id="textPanel">
+        <div class="field">
+          <label for="inputText">Input Text</label>
+          <textarea id="inputText" rows="4"
+            maxlength="450"
+            placeholder="Type your message here..."></textarea>
+        </div>
+
+        <button id="btnSend" class="action-button" type="button">
+          ➤ &nbsp; Translate Text
+        </button>
+      </div>
+
+      <div id="micPanel" class="hidden">
+        <div class="mic-area">
+          <div id="micIndicator" class="mic-circle">🎙</div>
+          <h3 id="micTitle">Ready to Speak</h3>
+          <p id="micDescription">
+            Hold ENTER on your ESP32, or hold the button below.
+          </p>
+
+          <button id="btnVoice" class="action-button mic-button" type="button">
+            Hold to Speak
+          </button>
+          <p class="helper">Release to translate your speech.</p>
+        </div>
+
+        <div class="field">
+          <label for="recognizedText">Recognized Speech</label>
+          <textarea id="recognizedText" rows="3"
+            readonly placeholder="Your speech will appear here..."></textarea>
+        </div>
+      </div>
+
+      <div class="result-section">
+        <div class="result-heading">
+          <label>Translation Result</label>
+          <span class="result-mark">✦ RESULT</span>
+        </div>
+        <div id="translatedResult" class="result">
+          Your translation will appear here...
+        </div>
+        <p id="detailStatus" class="hint">
+          Connect ESP32 and select a language.
+        </p>
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <section class="card device-card">
+        <span class="eyebrow">HARDWARE MONITOR</span>
+        <h2>ESP32 Device</h2>
+        <div class="lcd-frame">
+          <div class="lcd-screen">
+            <div id="lcdTitle">System Ready</div>
+            <div id="lcdDetail">Translator ON</div>
+          </div>
+        </div>
+        <p class="side-caption">Live LCD information via MQTT</p>
+      </section>
+
+      <section class="card instructions-card">
+        <span class="eyebrow">QUICK GUIDE</span>
+        <h2>How It Works</h2>
+        <div class="guide-item">
+          <span>01</span>
+          <p>Select your language using the ESP32 buttons.</p>
+        </div>
+        <div class="guide-item">
+          <span>02</span>
+          <p>Choose Send Text or Microphone.</p>
+        </div>
+        <div class="guide-item">
+          <span>03</span>
+          <p>Hold ENTER to speak, then release to translate.</p>
+        </div>
+      </section>
+    </aside>
+
+  </div>
+
+  <footer>
+    <span>© IoT Universal Translator</span>
+    <span>MQTT: broker.emqx.io • WSS 8084</span>
+  </footer>
+</main>
+
+<script>
+(() => {
+"use strict";
+
+// ==========================================
+// MQTT CONFIGURATION - ORIGINAL TOPICS
+// ==========================================
+
+const broker = "wss://broker.emqx.io:8084/mqtt";
+
+const topicInput =
+  "iot/universal_translator_781/input_text";
+const topicDeviceInput =
+  "iot/universal_translator_781/device_input";
+const topicResult =
+  "iot/universal_translator_781/result";
+const topicMode =
+  "iot/universal_translator_781/mode";
+const topicStatus =
+  "iot/universal_translator_781/status";
+const topicUIState =
+  "iot/universal_translator_781/ui_state";
+const topicMic =
+  "iot/universal_translator_781/microphone";
+
+// ==========================================
+// ELEMENTS
+// ==========================================
+
+const $ = id => document.getElementById(id);
+
+const badge = $("statusBadge");
+const modeLabel = $("languageMode");
+const input = $("inputText");
+const result = $("translatedResult");
+const detail = $("detailStatus");
+const btnSend = $("btnSend");
+const btnVoice = $("btnVoice");
+const methodText = $("methodText");
+const methodMic = $("methodMic");
+const textPanel = $("textPanel");
+const micPanel = $("micPanel");
+const micIndicator = $("micIndicator");
+const micTitle = $("micTitle");
+const micDescription = $("micDescription");
+const recognizedText = $("recognizedText");
+
+// ==========================================
+// SYSTEM VARIABLES
+// ==========================================
+
+let connected = false;
+let currentMode = "";
+let processing = false;
+let requestNumber = 0;
+
+let inputMethod = "text";
+let recording = false;
+let stopping = false;
+let recognition = null;
+let finalSpeech = "";
+let interimSpeech = "";
+let speechMode = "";
+let speechError = false;
+let speechSession = 0;
+let deviceScreen = -1;
+
+const SpeechRecognition =
+  window.SpeechRecognition ||
+  window.webkitSpeechRecognition;
+
+// ==========================================
+// HELPERS
+// ==========================================
+
+function setDetail(message, error = false) {
+  detail.textContent = message;
+  detail.classList.toggle("error", error);
+}
+
+function modeName(mode) {
+  if (mode === "id|en")
+    return "Indonesian → English";
+
+  if (mode === "en|id")
+    return "English → Indonesian";
+
+  return "Waiting for language selection...";
+}
+
+function updateButtons(disabled) {
+  btnSend.disabled = disabled;
+  btnVoice.disabled = disabled || recording || stopping;
+}
+
+function selectMethod(method) {
+  inputMethod = method;
+
+  const isMic = method === "microphone";
+
+  textPanel.classList.toggle("hidden", isMic);
+  micPanel.classList.toggle("hidden", !isMic);
+
+  methodText.classList.toggle("active", !isMic);
+  methodMic.classList.toggle("active", isMic);
+}
+
+methodText.addEventListener("click", () => {
+  if (!recording && !stopping) selectMethod("text");
+});
+
+methodMic.addEventListener("click", () => {
+  selectMethod("microphone");
+});
+
+// ==========================================
+// MQTT CONNECTION
+// ==========================================
+
+const client = mqtt.connect(broker, {
+  clientId:
+    "TranslatorWeb_" +
+    Math.random().toString(16).slice(2, 10),
+
+  keepalive: 60,
+  clean: true,
+  reconnectPeriod: 2000,
+  connectTimeout: 10000
+});
+
+client.on("connect", () => {
+  connected = true;
+  badge.textContent = "Connected";
+  badge.classList.add("connected");
+
+  client.subscribe([
+    topicMode,
+    topicResult,
+    topicStatus,
+    topicDeviceInput,
+    topicUIState,
+    topicMic
+  ]);
+
+  setDetail("MQTT connected. Waiting for ESP32...");
+});
+
+client.on("reconnect", () => {
+  connected = false;
+  badge.textContent = "Reconnecting...";
+  badge.classList.remove("connected");
+});
+
+client.on("offline", () => {
+  connected = false;
+  badge.textContent = "Offline";
+  badge.classList.remove("connected");
+  setDetail("MQTT connection lost.", true);
+});
+
+client.on("error", error => {
+  console.error("MQTT:", error);
+  setDetail("MQTT error: " + error.message, true);
+});
+
+// ==========================================
+// RECEIVE MQTT MESSAGES
+// ==========================================
+
+client.on("message", (topic, payload) => {
+  const message = payload.toString();
+
+  if (topic === topicMode) {
+    if (message === "id|en" || message === "en|id") {
+      currentMode = message;
+      modeLabel.textContent = modeName(message);
+      setDetail("Language: " + modeName(message));
+    }
+  }
+
+  else if (topic === topicResult) {
+    result.textContent = message;
+  }
+
+  else if (topic === topicStatus) {
+    if (message === "online")
+      setDetail("ESP32 online.");
+
+    else if (message === "translating")
+      setDetail("Processing translation...");
+
+    else if (message === "ready")
+      setDetail("Device ready.");
+
+    else if (message === "recording")
+      setDetail("Recording microphone...");
+  }
+
+  else if (topic === topicDeviceInput) {
+    if (message.trim()) {
+      input.value = message;
+      translateText(message, false);
+    }
+  }
+
+  else if (topic === topicUIState) {
+    try {
+      const state = JSON.parse(message);
+
+      $("lcdTitle").textContent = state.title || "";
+      $("lcdDetail").textContent = state.detail || "";
+
+      if (state.screen !== deviceScreen) {
+        deviceScreen = state.screen;
+
+        // Screen numbers from the ESP32 update
+        if (state.screen === 8)
+          selectMethod("text");
+
+        if (state.screen === 9)
+          selectMethod("microphone");
+      }
+    } catch (error) {
+      console.error("UI state:", error);
+    }
+  }
+
+  else if (topic === topicMic) {
+    if (message === "start")
+      startRecording();
+
+    else if (message === "stop")
+      stopRecording();
+  }
+});
+
+// ==========================================
+// ORIGINAL TRANSLATION SYSTEM
+// ==========================================
+
+async function translateText(
+  textValue,
+  sendToESP = true,
+  overrideMode = null
+) {
+  const text = String(textValue).trim();
+  const mode = overrideMode || currentMode;
+
+  if (!text) {
+    setDetail("Please enter your text.", true);
+    return;
+  }
+
+  if (text.length > 450) {
+    setDetail("Maximum 450 characters.", true);
+    return;
+  }
+
+  if (!connected) {
+    setDetail("MQTT is not connected.", true);
+    return;
+  }
+
+  if (mode !== "id|en" && mode !== "en|id") {
+    setDetail("Select a language on ESP32 first.", true);
+    return;
+  }
+
+  if (processing) {
+    setDetail("Please wait for the current translation.");
+    return;
+  }
+
+  const thisRequest = ++requestNumber;
+
+  processing = true;
+  updateButtons(true);
+
+  result.textContent = "Translating...";
+  setDetail("Sending text to translation service...");
+
+  try {
+    if (sendToESP) {
+      client.publish(topicInput, text);
+    }
+
+    const response = await fetch("translate.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        text: text,
+        mode: mode
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(
+        data.error || "Translation service failed."
+      );
+    }
+
+    if (thisRequest !== requestNumber) return;
+
+    client.publish(topicResult, data.translation);
+
+    result.textContent = data.translation;
+
+    setDetail(
+      "Translation completed: " + modeName(mode)
+    );
+
+  } catch (error) {
+    if (thisRequest === requestNumber) {
+      result.textContent = "Translation failed.";
+      setDetail(error.message, true);
+    }
+  } finally {
+    if (thisRequest === requestNumber) {
+      processing = false;
+      updateButtons(false);
+    }
+  }
+}
+
+// ==========================================
+// SEND TEXT
+// ==========================================
+
+btnSend.addEventListener("click", () => {
+  translateText(input.value, true);
+});
+
+input.addEventListener("keydown", event => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    translateText(input.value, true);
+  }
+});
+
+// ==========================================
+// MICROPHONE UI
+// ==========================================
+
+function micVisual(active) {
+  micIndicator.classList.toggle("recording", active);
+  btnVoice.classList.toggle("recording", active);
+
+  btnVoice.textContent =
+    active ? "Release to Translate" : "Hold to Speak";
+}
+
+function startRecording() {
+  if (recording || stopping || processing) return;
+
+  if (!SpeechRecognition) {
+    setDetail(
+      "Speech recognition is not supported by this browser.",
+      true
+    );
+    return;
+  }
+
+  if (currentMode !== "id|en" &&
+      currentMode !== "en|id") {
+    setDetail("Select a language on ESP32 first.", true);
+    return;
+  }
+
+  selectMethod("microphone");
+
+  const engine = new SpeechRecognition();
+  const session = ++speechSession;
+
+  recognition = engine;
+  speechMode = currentMode;
+
+  engine.lang =
+    speechMode === "id|en" ? "id-ID" : "en-US";
+
+  engine.continuous = true;
+  engine.interimResults = true;
+  engine.maxAlternatives = 1;
+
+  finalSpeech = "";
+  interimSpeech = "";
+  speechError = false;
+
+  recognizedText.value = "";
+
+  recording = true;
+  stopping = false;
+
+  micVisual(true);
+
+  micTitle.textContent = "Starting Microphone...";
+  micDescription.textContent = "Hold ENTER while speaking.";
+
+  engine.onstart = () => {
+    if (session !== speechSession) return;
+
+    micTitle.textContent =
+      stopping ? "Processing..." : "Listening...";
+  };
+
+  engine.onresult = event => {
+    if (session !== speechSession) return;
+
+    let interim = "";
+
+    for (let i = event.resultIndex;
+         i < event.results.length; i++) {
+
+      const spoken = event.results[i][0].transcript;
+
+      if (event.results[i].isFinal) {
+        finalSpeech += spoken + " ";
+      } else {
+        interim += spoken;
+      }
+    }
+
+    interimSpeech = interim;
+
+    recognizedText.value =
+      (finalSpeech + interimSpeech).trim();
+  };
+
+  engine.onerror = event => {
+    if (session !== speechSession) return;
+
+    if (event.error !== "no-speech" &&
+        event.error !== "aborted") {
+      speechError = true;
+      setDetail("Microphone error: " + event.error, true);
+    }
+  };
+
+  engine.onend = async () => {
+    if (session !== speechSession) return;
+
+    const spokenText =
+      (finalSpeech + interimSpeech).trim();
+
+    recording = false;
+    stopping = false;
+    recognition = null;
+
+    micVisual(false);
+    micTitle.textContent = "Ready to Speak";
+    micDescription.textContent =
+      "Hold ENTER to record again.";
+
+    if (spokenText) {
+      input.value = spokenText;
+      recognizedText.value = spokenText;
+
+      await translateText(
+        spokenText,
+        true,
+        speechMode
+      );
+    } else if (!speechError) {
+      setDetail("No speech detected. Try again.", true);
+    }
+  };
+
+  try {
+    engine.start();
+  } catch (error) {
+    recording = false;
+    stopping = false;
+    recognition = null;
+    micVisual(false);
+    setDetail("Unable to start microphone.", true);
+  }
+}
+
+function stopRecording() {
+  if (!recording || stopping) return;
+
+  stopping = true;
+
+  micTitle.textContent = "Processing Speech...";
+  micDescription.textContent =
+    "Recognizing and translating your voice.";
+
+  if (recognition) {
+    try {
+      recognition.stop();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+}
+
+// ==========================================
+// MANUAL HOLD-TO-SPEAK
+// ==========================================
+
+btnVoice.addEventListener("pointerdown", event => {
+  event.preventDefault();
+
+  try {
+    btnVoice.setPointerCapture(event.pointerId);
+  } catch (error) {}
+
+  startRecording();
+});
+
+btnVoice.addEventListener("pointerup", event => {
+  event.preventDefault();
+  stopRecording();
+});
+
+btnVoice.addEventListener("pointercancel", stopRecording);
+
+btnVoice.addEventListener(
+  "lostpointercapture",
+  stopRecording
+);
+
+btnVoice.addEventListener("keydown", event => {
+  if (event.repeat) return;
+
+  if (event.key === " " || event.key === "Enter") {
+    event.preventDefault();
+    startRecording();
+  }
+});
+
+btnVoice.addEventListener("keyup", event => {
+  if (event.key === " " || event.key === "Enter") {
+    event.preventDefault();
+    stopRecording();
+  }
+});
+
+selectMethod("text");
+
+})();
+</script>
+
+</body>
+</html>
